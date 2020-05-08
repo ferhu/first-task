@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="4a00e876-6ea7-477a-a547-85a6a0388d5e" >
+		<db:my-sql-connection host="db4free.net" port="3306" user="batch14" password="Batch1420" database="customerinfo14" />
+	</db:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="39138463-708a-40e8-9daf-fa710abe3efe" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config1" doc:name="Database Config" doc:id="b8974da2-9f1d-42b1-bf02-9f7cfa9f5689" >
+		<db:my-sql-connection host="db4free.net" port="3306" user="batch14" password="Batch1420" database="customerinfo14" />
+	</db:config>
+	<flow name="customer_management_apiFlow1" doc:id="c27e7a6d-897d-4fb5-ad63-d19f11c261c5" >
+		<http:listener doc:name="Listener" doc:id="f2e5d3ef-a882-4ed4-9973-1a5a6f6ff67f" config-ref="HTTP_Listener_config" path="/RetriveCustomer"/>
+		<db:select doc:name="Select" doc:id="17451cc8-5abb-488b-92a1-62072a185315" config-ref="Database_Config">
+			<db:sql >SELECT * FROM customers where customerID=:customerID;</db:sql>
+			<db:input-parameters ><![CDATA[#["customerID":attributes.queryParams.customerID]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="3d4c745a-6bef-41a8-a07c-71b1a8f59de5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="customer_management_apiFlow" doc:id="078a717b-f4f5-404f-bce1-defb0bc4741c" >
+		<http:listener doc:name="Listener" doc:id="85cef87c-be3e-4e97-9494-85c5909d233e" config-ref="HTTP_Listener_config" path="/createcustomersinfo"/>
+		<db:insert doc:name="Insert" doc:id="f61014c3-766d-4073-a6df-ca9a4164a7b9" config-ref="Database_Config">
+			<db:sql >insert into customers(customerID,fName,lName,phoneNumber,SSN,customerAddress)
+values(:customerID,:fName,:lName,:phoneNumber,:SSN,:customerAddress);
+</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"customerID": payload.customerID,
+	"fName": payload.fName,
+	"lName" : payload.lName,
+	"phoneNumber": payload.phoneNumber,
+	"SSN": payload.SSN,
+	"customerAddress": payload.customerAddress
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="a043ddfa-2ea0-4393-b244-070d3da26a1a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "create successful"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="customer_management_apiFlow2" doc:id="d7b95825-bb44-48e8-836c-f7c5da0b580b" >
+		<http:listener doc:name="Listener" doc:id="7f0b5bc0-8d6e-4e4d-adf6-c3af562da82f" config-ref="HTTP_Listener_config" path="/Delete"/>
+		<db:delete doc:name="Delete" doc:id="504ee022-3800-4aec-b820-bbb567eb6b91" config-ref="Database_Config">
+			<db:sql >Delete from customers where customerID=:Id;
+</db:sql>
+			<db:input-parameters ><![CDATA[#[customerID:attributes.queryParams.Id]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="d74a624a-6809-446f-9717-9fdeca6d55bb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{"messgae":"delete Successful"}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="customer_management_apiFlow3" doc:id="b1a1f8fd-9cf7-438f-abec-5cea7ff7cad7" >
+		<http:listener doc:name="Listener" doc:id="63aaf3b9-e731-4af0-8ce2-42d92df7d21f" config-ref="HTTP_Listener_config" path="/Update"/>
+		<db:update doc:name="Update" doc:id="83f449ae-b88d-47ba-8391-e96a8d6c7538" config-ref="Database_Config">
+			<db:sql >UPDATE customers  SET fName=:'Love',:where customerID=:100;
+  </db:sql>
+			<db:input-parameters ><![CDATA[#[customerID:attributes.queryParams.id]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="e2adc262-3b34-4d36-ad9b-b2fd8a613359" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{"messgae":"Update Successful"}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
